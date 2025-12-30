@@ -1,7 +1,7 @@
 #ifndef PROCESS_H
 #define PROCESS_H
 
-#include <time.h> 
+#include <time.h>
 
 
 typedef enum {
@@ -11,23 +11,35 @@ typedef enum {
 } ProcessState;
 
 
+
 typedef struct {
-    int pid;                
-    char name[20];          
-    ProcessState state;     
-    time_t start_time;      
+    int pid;
+    char name[20];
+    ProcessState state;
+    time_t start_time;
 } Process;
+
+
 
 
 void process_init(void);
 
+
 void process_create(const char *name);
+
 
 int process_find_by_name(const char *name, int *pid_array, int max_result);
 
-void process_kill(int pid);
+
+void process_kill_by_pid(int pid);
+
 
 void process_list(void);
 
 
-#endif 
+void process_list_same_name(const char *name);
+
+
+void process_kill_by_name(const char *name);
+
+#endif
