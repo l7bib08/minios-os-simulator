@@ -8,7 +8,6 @@ static Process *table = NULL;
 static int process_count = 0;
 static int next_pid = 1;
 
-
 static const char *state_to_string(ProcessState s) {
     switch (s) {
         case PROCESS_READY:      return "READY";
@@ -18,14 +17,12 @@ static const char *state_to_string(ProcessState s) {
     }
 }
 
-
 void process_init(void) {
     free(table);
     table = NULL;
     process_count = 0;
     next_pid = 1;
 }
-
 
 void process_create(const char *name) {
     if (name == NULL || name[0] == '\0') {
@@ -53,7 +50,6 @@ void process_create(const char *name) {
     printf("Process created: PID=%d, NAME=%s\n", p->pid, p->name);
 }
 
-
 int process_find_by_name(const char *name, int *pid_array, int max_result) {
     if (name == NULL || name[0] == '\0' || pid_array == NULL || max_result <= 0)
         return -1;
@@ -70,7 +66,6 @@ int process_find_by_name(const char *name, int *pid_array, int max_result) {
 
     return found;
 }
-
 
 void process_kill_by_pid(int pid) {
     if (pid <= 0) {
@@ -111,7 +106,6 @@ void process_list(void) {
     }
 }
 
-
 void process_list_same_name(const char *name) {
     if (name == NULL || name[0] == '\0') {
         printf("Error: invalid name.\n");
@@ -139,14 +133,12 @@ void process_list_same_name(const char *name) {
     }
 }
 
-
 void process_kill_by_name(const char *name) {
     if (name == NULL || name[0] == '\0') {
         printf("Error: invalid name.\n");
         return;
     }
 
-    
     int pids[100];
     int count = process_find_by_name(name, pids, 100);
 
@@ -165,9 +157,36 @@ void process_kill_by_name(const char *name) {
         return;
     }
 
-    
     printf("Multiple processes named '%s' were found.\n", name);
     printf("Please choose a PID to kill from the list below:\n");
     process_list_same_name(name);
 }
- 
+
+
+int process_get_count(void) {
+    return process_count;
+}
+
+const Process* process_get_by_index(int index) {
+    if (index < 0 || index >= process_count) return NULL;
+    return &table[index];
+}
+
+int process_set_state_by_pid(int pid, ProcessState new_state) {
+    for (int i = 0; i < process_count; i++) {
+        if (table[i].pid == pid) {
+            table[i].state = new_state;
+            return 0;
+        }
+    }
+    return -1;
+}
+
+int process_get_running_pid(void) {
+    for (int i = 0; i < process_count; i++) {
+        if (table[i].state == PROCESS_RUNNING) {
+            return table[i].pid;
+        }
+    }
+    return -1;
+}
