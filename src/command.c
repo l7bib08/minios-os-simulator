@@ -6,7 +6,7 @@
 #include "command.h"
 #include "process.h"
 
-static void trim_newline(char *s) {
+static void remove_newline(char *s) {
     if (s == NULL) return;
     size_t n = strlen(s);
     while (n > 0 && (s[n - 1] == '\n' || s[n - 1] == '\r')) {
@@ -27,9 +27,10 @@ void check_input(const char *input) {
     int isletter = 0;
 
     int n = sscanf(input, "%31s %255[^\n]", cmnd, rest);
+    
     if (n < 1) return;
 
-    trim_newline(rest);
+    remove_newline(rest);
 
     if (strcmp(cmnd, "help") == 0) {
         puts("Commands: run <name>, kill <pid|name>, ps, help, exit");
@@ -42,14 +43,30 @@ void check_input(const char *input) {
 
     if (strcmp(cmnd, "run") == 0) {
         if (n < 2 || rest[0] == '\0') {
-            printf("name invalid\n");
+            printf("Usage: run <name> <burst>\n");
             return;
         }
-        process_create(rest);
+
+        char name[20] = {0};
+        int burst = 0;
+
+        int m = sscanf(rest, "%19s %d", name, &burst);
+        if (m != 2) {
+            printf("Usage: run <name> <burst>\n");
+            return;
+        }
+
+        if (burst <= 0) {
+            printf("Burst must be > 0\n");
+            return;
+        }
+
+        process_create_with_burst(name, burst);
         return;
     }
 
     if (strcmp(cmnd, "kill") == 0) {
+
         if (n < 2 || rest[0] == '\0') {
             printf("invalid argument\n");
             return;

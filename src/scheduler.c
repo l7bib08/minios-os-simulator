@@ -25,7 +25,7 @@ static void queue_push_back(int pid);
 static void dispatch_next_rr(int tick_system) {
 
     while (!queue_is_empty()) {
-        
+
         int next = queue_pop_front_pid();
         if (next <= 0) continue;
 
@@ -77,6 +77,7 @@ void scheduler_fifo(void) {
     current_pid = chosen->pid;
 }
 
+
 static void queue_init(int capacity_init) {
 
     if (capacity_init < 1) capacity_init = 1;
@@ -84,7 +85,7 @@ static void queue_init(int capacity_init) {
     free(q);
     q = NULL;
 
-    q = malloc(capacity_init * sizeof(int));
+    q = (int*)malloc(capacity_init * sizeof(int));
     if (q == NULL) {
         printf("ERROR: queue allocation failed\n");
         capacity = 0;
@@ -119,7 +120,7 @@ static void queue_push_back(int pid) {
 
     if (q == NULL || capacity <= 0) {
         capacity = 4;
-        q = malloc(capacity * sizeof(int));
+        q = (int*)malloc(capacity * sizeof(int));
         if (q == NULL) {
             printf("ERROR: queue allocation failed\n");
             capacity = 0;
@@ -136,7 +137,7 @@ static void queue_push_back(int pid) {
         int old_capacity = capacity;
         int new_capacity = old_capacity * 2;
 
-        int *new_q = malloc(new_capacity * sizeof(int));
+        int *new_q = (int*)malloc(new_capacity * sizeof(int));
         if (new_q == NULL) {
             printf("ERROR: queue grow failed\n");
             return;
@@ -157,6 +158,7 @@ static void queue_push_back(int pid) {
     number_of_ready_pids++;
 }
 
+
 void scheduler_rr_init(int quantum) {
 
     if (quantum < 1) quantum = 1;
@@ -169,11 +171,8 @@ void scheduler_rr_init(int quantum) {
 }
 
 void scheduler_rr_on_process_created(int pid) {
-
     if (pid < 1) return;
-
     queue_push_back(pid);
-
 }
 
 void scheduler_rr_step(int tick_system) {
@@ -202,4 +201,58 @@ void scheduler_rr_step(int tick_system) {
     running_pid = -1;
 
     dispatch_next_rr(tick_system);
+}
+
+
+void scheduler_sjf_init(void) {
+    current_pid = -1;
+}
+
+void scheduler_sjf_step(void) {
+
+    int running = process_get_running_pid();
+
+    if (running != -1) {
+        int remaining = process_decrement_remaining_time(running);
+
+        if (remaining < 0) return;
+
+        if (remaining == 0) {
+            process_set_state_by_pid(running, PROCESS_TERMINATED);
+        }
+        return;
+    }
+
+    int count = process_get_count();
+    int best_pid = -1;
+    int shortest = 999999;
+    time_t best_start = 0;
+
+    for (int i = 0; i < count; i++) {
+        const Process *p = process_get_by_index(i);
+        if (!p) continue;
+        if (p->state != PROCESS_READY) continue;
+
+        if (p->remaining_time < shortest) {
+            shortest = p->remaining_time;
+            best_pid = p->pid;
+            best_start = p->start_time;
+        } else if (p->remaining_time == shortest && best_pid != -1) {
+            if (p->start_time < best_start ||
+                (p->start_time == best_start && p->pid < best_pid)) {
+                best_pid = p->pid;
+                best_start = p->start_time;
+            }
+        } else if (p->remaining_time == shortest && best_pid == -1) {
+            best_pid = p->pid;
+            best_start = p->start_time;
+        }
+    }
+
+    if (best_pid != -1) {
+        process_set_state_by_pid(best_pid, PROCESS_RUNNING);
+        current_pid = best_pid;
+    } else {
+        current_pid = -1;
+    }
 }

@@ -57,6 +57,46 @@ int process_create_return_pid(const char *name) {
     return before;
 }
 
+void process_create_with_burst(const char *name, int burst) {
+    if (name == NULL || name[0] == '\0') {
+        printf("Error: invalid process name.\n");
+        return;
+    }
+    if (burst <= 0) {
+        printf("Error: invalid burst.\n");
+        return;
+    }
+
+    Process *tmp = realloc(table, (process_count + 1) * sizeof(Process));
+    if (tmp == NULL) {
+        fprintf(stderr, "Error: memory allocation failed\n");
+        return;
+    }
+
+    table = tmp;
+    Process *p = &table[process_count];
+
+    p->pid = next_pid++;
+    strncpy(p->name, name, sizeof(p->name) - 1);
+    p->name[sizeof(p->name) - 1] = '\0';
+    p->state = PROCESS_READY;
+    p->start_time = time(NULL);
+
+    p->burst_time = burst;
+    p->remaining_time = burst;
+
+    process_count++;
+
+    printf("Process created: PID=%d, NAME=%s, BURST=%d\n", p->pid, p->name, burst);
+}
+
+int process_create_with_burst_return_pid(const char *name, int burst) {
+    int before = next_pid;
+    process_create_with_burst(name, burst);
+    if (next_pid == before) return -1;
+    return before;
+}
+
 int process_find_by_name(const char *name, int *pid_array, int max_result) {
     if (name == NULL || name[0] == '\0' || pid_array == NULL || max_result <= 0)
         return -1;
@@ -101,15 +141,19 @@ void process_list(void) {
         return;
     }
 
-    printf("PID\tNAME\t\tSTATE\t\tSTART_TIME\n");
-    printf("-------------------------------------------------\n");
+    printf("PID\tNAME\t\tSTATE\t\tSTART_TIME\tBURST\tREMAIN\n");
+    printf("-----------------------------------------------------------------\n");
 
     for (int i = 0; i < process_count; i++) {
-        printf("%d\t%-10s\t%-10s\t%ld\n",
-               table[i].pid,
-               table[i].name,
-               state_to_string(table[i].state),
-               (long)table[i].start_time);
+
+        printf("%d\t%-10s\t%-10s\t%ld\t%d\t%d\n",
+            table[i].pid,
+            table[i].name,
+            state_to_string(table[i].state),
+            (long)table[i].start_time,
+            table[i].burst_time,
+            table[i].remaining_time);
+
     }
 }
 
