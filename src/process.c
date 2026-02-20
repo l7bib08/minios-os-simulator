@@ -44,6 +44,8 @@ void process_create(const char *name) {
     p->name[sizeof(p->name) - 1] = '\0';
     p->state = PROCESS_READY;
     p->start_time = time(NULL);
+    p->burst_time = 1;
+    p->remaining_time = 1;
 
     process_count++;
 
@@ -53,7 +55,7 @@ void process_create(const char *name) {
 int process_create_return_pid(const char *name) {
     int before = next_pid;
     process_create(name);
-    if (next_pid == before) return -1; 
+    if (next_pid == before) return -1;
     return before;
 }
 
@@ -74,14 +76,13 @@ void process_create_with_burst(const char *name, int burst) {
     }
 
     table = tmp;
-    Process *p = &table[process_count];
 
+    Process *p = &table[process_count];
     p->pid = next_pid++;
     strncpy(p->name, name, sizeof(p->name) - 1);
     p->name[sizeof(p->name) - 1] = '\0';
     p->state = PROCESS_READY;
     p->start_time = time(NULL);
-
     p->burst_time = burst;
     p->remaining_time = burst;
 
@@ -145,15 +146,13 @@ void process_list(void) {
     printf("-----------------------------------------------------------------\n");
 
     for (int i = 0; i < process_count; i++) {
-
         printf("%d\t%-10s\t%-10s\t%ld\t%d\t%d\n",
-            table[i].pid,
-            table[i].name,
-            state_to_string(table[i].state),
-            (long)table[i].start_time,
-            table[i].burst_time,
-            table[i].remaining_time);
-
+               table[i].pid,
+               table[i].name,
+               state_to_string(table[i].state),
+               (long)table[i].start_time,
+               table[i].burst_time,
+               table[i].remaining_time);
     }
 }
 
@@ -165,16 +164,18 @@ void process_list_same_name(const char *name) {
 
     int printed = 0;
 
-    printf("PID\tNAME\t\tSTATE\t\tSTART_TIME\n");
-    printf("-------------------------------------------------\n");
+    printf("PID\tNAME\t\tSTATE\t\tSTART_TIME\tBURST\tREMAIN\n");
+    printf("-----------------------------------------------------------------\n");
 
     for (int i = 0; i < process_count; i++) {
         if (strcmp(table[i].name, name) == 0) {
-            printf("%d\t%-10s\t%-10s\t%ld\n",
+            printf("%d\t%-10s\t%-10s\t%ld\t%d\t%d\n",
                    table[i].pid,
                    table[i].name,
                    state_to_string(table[i].state),
-                   (long)table[i].start_time);
+                   (long)table[i].start_time,
+                   table[i].burst_time,
+                   table[i].remaining_time);
             printed++;
         }
     }
@@ -212,7 +213,6 @@ void process_kill_by_name(const char *name) {
     printf("Please choose a PID to kill from the list below:\n");
     process_list_same_name(name);
 }
-
 
 int process_get_count(void) {
     return process_count;
@@ -256,15 +256,28 @@ int process_get_running_pid(void) {
     return -1;
 }
 
+int process_decrement_remaining_time(int pid) {
+    if (pid <= 0) return -1;
+
+    for (int i = 0; i < process_count; i++) {
+        if (table[i].pid == pid) {
+            if (table[i].state == PROCESS_TERMINATED) return table[i].remaining_time;
+            if (table[i].remaining_time > 0) table[i].remaining_time--;
+            return table[i].remaining_time;
+        }
+    }
+    return -1;
+}
 
 int *process_get_pids(int count) {
     if (count <= 0) return NULL;
 
-    int *list_of_pids = malloc(count * sizeof(int));
+    int *list_of_pids = malloc((size_t)count * sizeof(int));
     if (!list_of_pids) return NULL;
 
-    for (int i = 0; i < count && i < process_count; i++) {
-        list_of_pids[i] = table[i].pid;
+    for (int i = 0; i < count; i++) {
+        if (i < process_count) list_of_pids[i] = table[i].pid;
+        else list_of_pids[i] = -1;
     }
 
     return list_of_pids;
