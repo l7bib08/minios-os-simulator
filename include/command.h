@@ -3,4 +3,4 @@
 
 void check_input(const char *input);
 
-#endif 
+#endif

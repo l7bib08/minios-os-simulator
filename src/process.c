@@ -50,6 +50,13 @@ void process_create(const char *name) {
     printf("Process created: PID=%d, NAME=%s\n", p->pid, p->name);
 }
 
+int process_create_return_pid(const char *name) {
+    int before = next_pid;
+    process_create(name);
+    if (next_pid == before) return -1; 
+    return before;
+}
+
 int process_find_by_name(const char *name, int *pid_array, int max_result) {
     if (name == NULL || name[0] == '\0' || pid_array == NULL || max_result <= 0)
         return -1;
@@ -172,7 +179,21 @@ const Process* process_get_by_index(int index) {
     return &table[index];
 }
 
+int process_get_state_by_pid(int pid, ProcessState *out_state) {
+    if (pid <= 0 || out_state == NULL) return -1;
+
+    for (int i = 0; i < process_count; i++) {
+        if (table[i].pid == pid) {
+            *out_state = table[i].state;
+            return 0;
+        }
+    }
+    return -1;
+}
+
 int process_set_state_by_pid(int pid, ProcessState new_state) {
+    if (pid <= 0) return -1;
+
     for (int i = 0; i < process_count; i++) {
         if (table[i].pid == pid) {
             table[i].state = new_state;
@@ -189,4 +210,18 @@ int process_get_running_pid(void) {
         }
     }
     return -1;
+}
+
+
+int *process_get_pids(int count) {
+    if (count <= 0) return NULL;
+
+    int *list_of_pids = malloc(count * sizeof(int));
+    if (!list_of_pids) return NULL;
+
+    for (int i = 0; i < count && i < process_count; i++) {
+        list_of_pids[i] = table[i].pid;
+    }
+
+    return list_of_pids;
 }
