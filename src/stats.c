@@ -64,9 +64,9 @@ void stats_print(void) {
     double throughput = 0.0;
     if (total_ticks > 0) throughput = (double)terminated / (double)total_ticks;
 
-    printf("Average WT: %.2f\n", avg_wt);
-    printf("Average RT: %.2f\n", avg_rt);
-    printf("Average TAT: %.2f\n", avg_tat);
+    printf("Average Waiting Time: %.2f\n", avg_wt);
+    printf("Average Response Time: %.2f\n", avg_rt);
+    printf("Average Turnaround Time: %.2f\n", avg_tat);
     printf("Throughput: %.4f proc/tick\n", throughput);
     printf("Context switches: %d\n", context_switches);
     printf("=========================================\n");
