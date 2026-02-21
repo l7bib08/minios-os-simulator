@@ -32,8 +32,6 @@ void stats_print(void) {
     printf("Total ticks: %d\n", total_ticks);
     printf("Total processes: %d\n", count);
 
-    printf("\nPID\tNAME\t\tWT\tRT\tTAT\tBURST\n");
-    printf("-------------------------------------------------\n");
 
     for (int i = 0; i < count; i++) {
         const Process *p = process_get_by_index(i);
